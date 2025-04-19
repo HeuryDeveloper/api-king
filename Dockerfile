@@ -1,24 +1,14 @@
 # Etapa de build
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
-
-# Copia os arquivos do projeto
+COPY King/*.csproj ./King/
+RUN dotnet restore "King/King.csproj"
 COPY . .
-
-# Restaura os pacotes
-RUN dotnet restore King/King.csproj
-
-# Compila o projeto
-WORKDIR /src/King
-RUN dotnet build "King.csproj" -c Release -o /app/build
-
-# Etapa de publicação
-FROM build AS publish
+WORKDIR "/src/King"
 RUN dotnet publish "King.csproj" -c Release -o /app/publish
 
 # Etapa final
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:6.0
 WORKDIR /app
-COPY --from=publish /app/publish .
-
+COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "King.dll"]
