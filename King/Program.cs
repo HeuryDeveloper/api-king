@@ -197,11 +197,6 @@ app.MapPost("/alexa/verificar-estoque", async (HttpContext context) =>
         PropertyNameCaseInsensitive = true
     });
 
-    Console.WriteLine("JSON recebido:");
-    Console.WriteLine(body);
-    Console.WriteLine("Produto:");
-    Console.WriteLine(requestData?.Request?.Intent?.Slots?["nomeProduto"]?.Value);
-
     string nomeProduto = requestData?.Request?.Intent?.Slots?["nomeProduto"]?.Value ?? "";
 
     Console.WriteLine($"Produto recebido da Alexa: {nomeProduto}");
@@ -242,6 +237,108 @@ app.MapPost("/alexa/verificar-estoque", async (HttpContext context) =>
     });
 });
 
+// Endpoint da Alexa para buscar dados do produto
+app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
+{
+    using var reader = new StreamReader(context.Request.Body);
+    var body = await reader.ReadToEndAsync();
+
+    var requestData = JsonSerializer.Deserialize<AlexaRequest>(body, new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true
+    });
+
+    string codProduto = requestData?.Request?.Intent?.Slots?["codProduto"]?.Value ?? "";
+    string campo = requestData?.Request?.Intent?.Slots?["informacao"]?.Value ?? "";
+
+    if (string.IsNullOrWhiteSpace(codProduto))
+    {
+        return Results.BadRequest(new
+        {
+            response = new
+            {
+                outputSpeech = new
+                {
+                    type = "PlainText",
+                    text = "Desculpe, não consegui entender o nome do produto."
+                },
+                shouldEndSession = true
+            }
+        });
+    }
+
+    var produto = await ObterProdutoPorCodigo(codProduto);
+    string respostaAlexa = "";
+
+    if (campo.Contains("estoque"))
+    {
+        respostaAlexa = produto != null
+            ? $"Voce tem {produto.QuantidadeEstoque} unidades do produto {produto.Descricao}."
+            : $"Não encontrei o produto {codProduto} no estoque.";
+    }
+    else if (campo.Contains("compra"))
+    {
+        respostaAlexa = produto != null
+            ? $"Voce comprou o produto {produto.Descricao} por {produto.PrecoCompra}."
+            : $"Não encontrei o produto {codProduto} no cadastro.";
+    }
+    else if (campo.Contains("venda"))
+    {
+        respostaAlexa = produto != null
+            ? $"O valor de venda do produto {produto.Descricao} é de {produto.PrecoVenda}."
+            : $"Não encontrei o produto {codProduto} no cadastro.";
+    }
+    else if (campo.Contains("descri") || campo.Contains("nome"))
+    {
+        respostaAlexa = produto != null
+            ? $"A descriçao do produto {produto.CodigoFornecedor} é {produto.Descricao}."
+            : $"Não encontrei o produto {codProduto} no cadastro.";
+    }
+
+    return Results.Json(new
+    {
+        response = new
+        {
+            outputSpeech = new
+            {
+                type = "PlainText",
+                text = respostaAlexa
+            },
+            shouldEndSession = true
+        }
+    });
+});
+
+
+// Função para buscar produto no banco de dados
+async Task<Produto?> ObterProdutoPorCodigo(string codigo)
+{
+    //string connectionString = "Server=localhost;Port=3306;Database=king;User=root;Password=1234";
+    string connectionString = "Server=hopper.proxy.rlwy.net;Port=10728;Database=railway;Uid=root;Pwd=ZsJZKjXPpZmTBiNtXTcHEJFNDHnvOHNk;";
+
+    using var connection = new MySqlConnection(connectionString);
+    await connection.OpenAsync();
+
+    var cmd = new MySqlCommand("SELECT id, nome, descricao, codigo_fornecedor, preco_venda, preco_compra, quantidade_estoque FROM produtos WHERE codigo_fornecedor = @codigo", connection);
+    cmd.Parameters.AddWithValue("@codigo_fornecedor", codigo);
+
+    using var reader = await cmd.ExecuteReaderAsync();
+    if (await reader.ReadAsync())
+    {
+        return new Produto
+        {
+            Id = reader.GetInt32(0),
+            Nome = reader.GetString(1),
+            Descricao = reader.GetString(2),
+            CodigoFornecedor = reader.GetString(3),
+            PrecoVenda = reader.GetDecimal(4),
+            PrecoCompra = reader.GetDecimal(5),
+            QuantidadeEstoque = reader.GetInt32(6)
+        };
+    }
+
+    return null;
+}
 
 // Função para buscar produto no banco de dados
 async Task<Produto?> ObterProdutoPorNome(string nome)
