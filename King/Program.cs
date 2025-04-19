@@ -322,7 +322,7 @@ async Task<Produto?> ObterProdutoPorCodigo(string codigo)
     await connection.OpenAsync();
 
     var cmd = new MySqlCommand("SELECT id, nome, descricao, codigo_fornecedor, preco_venda, preco_compra, quantidade_estoque FROM produtos WHERE codigo_fornecedor = @codigo", connection);
-    cmd.Parameters.AddWithValue("@codigo_fornecedor", codigo);
+    cmd.Parameters.AddWithValue("@codigo", codigo);
 
     using var reader = await cmd.ExecuteReaderAsync();
     if (await reader.ReadAsync())
