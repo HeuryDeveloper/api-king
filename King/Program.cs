@@ -225,7 +225,7 @@ app.MapPost("/alexa/verificar-estoque", async (HttpContext context) =>
     var produto = await ObterProdutoPorNome(nomeProduto);
 
     string respostaAlexa = produto != null
-        ? $"Você tem {produto.QuantidadeEstoque} unidades do produto {produto.Nome}."
+        ? $"Voce tem {produto.QuantidadeEstoque} unidades do produto {produto.Nome}."
         : $"Não encontrei o produto {nomeProduto} no estoque.";
 
     return Results.Json(new
