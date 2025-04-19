@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using MySql.Data.MySqlClient;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -248,8 +250,8 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
         PropertyNameCaseInsensitive = true
     });
 
-    string codProduto = requestData?.Request?.Intent?.Slots?["codProduto"]?.Value ?? "";
     string campo = requestData?.Request?.Intent?.Slots?["informacao"]?.Value ?? "";
+    string codProduto = Regex.Match(campo, @"\d+").Value;
 
     if (string.IsNullOrWhiteSpace(codProduto))
     {
@@ -270,7 +272,7 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     var produto = await ObterProdutoPorCodigo(codProduto);
     string respostaAlexa = "";
 
-    if (campo.Contains("estoque"))
+    if (campo.Contains("estoque") || campo.Contains("quantidade"))
     {
         respostaAlexa = produto != null
             ? $"Voce tem {produto.QuantidadeEstoque} unidades do produto {produto.Descricao}."
