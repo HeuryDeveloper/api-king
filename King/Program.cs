@@ -299,15 +299,7 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
 
     return Results.Json(new
     {
-        response = new
-        {
-            outputSpeech = new
-            {
-                type = "PlainText",
-                text = respostaAlexa
-            },
-            shouldEndSession = true
-        }
+        mensagem = respostaAlexa
     });
 });
 
