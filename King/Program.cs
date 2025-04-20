@@ -251,7 +251,12 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     });
 
     string campo = requestData?.Request?.Intent?.Slots?["informacao"]?.Value ?? "";
-    string codProduto = Regex.Match(campo, @"\d+").Value;
+    string codProduto = requestData?.Request?.Intent?.Slots?["codigo"]?.Value ?? "";
+
+    if ((codProduto == null) || (codProduto == ""))
+    {
+        codProduto = Regex.Match(campo, @"\d+").Value;
+    }
 
     if (string.IsNullOrWhiteSpace(codProduto))
     {
@@ -276,30 +281,31 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     {
         respostaAlexa = produto != null
             ? $"Voce tem {produto.QuantidadeEstoque} unidades do produto {produto.Descricao}."
-            : $"Não encontrei o produto {codProduto} no estoque.";
+            : $"Nao encontrei o produto {codProduto} no estoque.";
     }
     else if (campo.Contains("compra") || campo.Contains("comprei"))
     {
         respostaAlexa = produto != null
             ? $"Voce comprou o produto {produto.Descricao} por {produto.PrecoCompra}."
-            : $"Não encontrei o produto {codProduto} no cadastro.";
+            : $"Nao encontrei o produto {codProduto} no cadastro.";
     }
-    else if (campo.Contains("venda"))
+    else if (campo.Contains("venda") || (campo.Contains("vendo"))
     {
         respostaAlexa = produto != null
             ? $"O valor de venda do produto {produto.Descricao} e de {produto.PrecoVenda}."
-            : $"Não encontrei o produto {codProduto} no cadastro.";
+            : $"Nao encontrei o produto {codProduto} no cadastro.";
     }
     else if (campo.Contains("descri") || campo.Contains("nome"))
     {
         respostaAlexa = produto != null
-            ? $"A descriçao do produto {produto.CodigoFornecedor} e {produto.Descricao}."
-            : $"Não encontrei o produto {codProduto} no cadastro.";
+            ? $"A descricao do produto {produto.CodigoFornecedor} e {produto.Descricao}."
+            : $"Nao encontrei o produto {codProduto} no cadastro.";
     }
 
     return Results.Json(new
     {
-        mensagem = respostaAlexa
+        mensagem = respostaAlexa,
+        codigo = codProduto
     });
 });
 
