@@ -259,11 +259,11 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     });
 
     string campo = informacao;
-    string codProduto = codigo;
+    string codProduto = Regex.Match(campo, @"\d+").Value;
 
-    if (codigo == null)
+    if (string.IsNullOrWhiteSpace(codProduto))
     {
-        codProduto = Regex.Match(campo, @"\d+").Value;
+        codProduto = codigo;
     }
 
     if (string.IsNullOrWhiteSpace(codProduto))
