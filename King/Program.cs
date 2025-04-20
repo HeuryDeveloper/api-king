@@ -262,9 +262,9 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
                 outputSpeech = new
                 {
                     type = "PlainText",
-                    text = "Desculpe, não consegui entender o nome do produto."
-                },
-                shouldEndSession = true
+                    text = "Desculpe, não consegui entender o que voce disse."
+                }
+                //shouldEndSession = true
             }
         });
     }
@@ -278,7 +278,7 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
             ? $"Voce tem {produto.QuantidadeEstoque} unidades do produto {produto.Descricao}."
             : $"Não encontrei o produto {codProduto} no estoque.";
     }
-    else if (campo.Contains("compra"))
+    else if (campo.Contains("compra") || campo.Contains("comprei"))
     {
         respostaAlexa = produto != null
             ? $"Voce comprou o produto {produto.Descricao} por {produto.PrecoCompra}."
@@ -287,13 +287,13 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     else if (campo.Contains("venda"))
     {
         respostaAlexa = produto != null
-            ? $"O valor de venda do produto {produto.Descricao} é de {produto.PrecoVenda}."
+            ? $"O valor de venda do produto {produto.Descricao} e de {produto.PrecoVenda}."
             : $"Não encontrei o produto {codProduto} no cadastro.";
     }
     else if (campo.Contains("descri") || campo.Contains("nome"))
     {
         respostaAlexa = produto != null
-            ? $"A descriçao do produto {produto.CodigoFornecedor} é {produto.Descricao}."
+            ? $"A descriçao do produto {produto.CodigoFornecedor} e {produto.Descricao}."
             : $"Não encontrei o produto {codProduto} no cadastro.";
     }
 
