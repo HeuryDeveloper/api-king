@@ -289,7 +289,7 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
             ? $"Voce comprou o produto {produto.Descricao} por {produto.PrecoCompra}."
             : $"Nao encontrei o produto {codProduto} no cadastro.";
     }
-    else if (campo.Contains("venda") || (campo.Contains("vendo"))
+    else if (campo.Contains("venda") || campo.Contains("vendo"))
     {
         respostaAlexa = produto != null
             ? $"O valor de venda do produto {produto.Descricao} e de {produto.PrecoVenda}."
