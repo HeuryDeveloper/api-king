@@ -250,9 +250,6 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     dados.TryGetValue("informacao", out var informacao);
     dados.TryGetValue("codigo", out var codigo); // Pode ser null, se não enviado
 
-    Console.WriteLine("JSON recebido da Alexa:");
-    Console.WriteLine(body); // <-- isso aparecerá nos logs do Render
-
     var requestData = JsonSerializer.Deserialize<AlexaRequest>(body, new JsonSerializerOptions
     {
         PropertyNameCaseInsensitive = true
@@ -307,6 +304,12 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     {
         respostaAlexa = produto != null
             ? $"A descricao do produto {produto.CodigoFornecedor} e {produto.Descricao}."
+            : $"Nao encontrei o produto {codProduto} no cadastro.";
+    }
+    else if (campo.Contains("lucro") || campo.Contains("ganhando"))
+    {
+        respostaAlexa = produto != null
+            ? $"O lucro do produto {produto.Descricao} e de {produto.PrecoVenda - produto.PrecoCompra}, representa {Convert.ToDouble((produto.PrecoVenda - produto.PrecoCompra) / produto.PrecoCompra * 100).ToString("0.00")} porcento."
             : $"Nao encontrei o produto {codProduto} no cadastro.";
     }
 
