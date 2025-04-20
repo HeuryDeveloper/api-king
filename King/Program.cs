@@ -245,6 +245,9 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     using var reader = new StreamReader(context.Request.Body);
     var body = await reader.ReadToEndAsync();
 
+    Console.WriteLine("JSON recebido da Alexa:");
+    Console.WriteLine(body); // <-- isso aparecerá nos logs do Render
+
     var requestData = JsonSerializer.Deserialize<AlexaRequest>(body, new JsonSerializerOptions
     {
         PropertyNameCaseInsensitive = true
