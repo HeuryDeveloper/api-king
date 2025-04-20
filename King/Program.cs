@@ -259,7 +259,7 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     });
 
     string campo = informacao;
-    string codProduto = "";
+    string codProduto = codigo;
 
     if (codigo == null)
     {
