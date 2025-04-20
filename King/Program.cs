@@ -245,6 +245,11 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     using var reader = new StreamReader(context.Request.Body);
     var body = await reader.ReadToEndAsync();
 
+    var dados = JsonSerializer.Deserialize<Dictionary<string, string>>(body);
+
+    dados.TryGetValue("informacao", out var informacao);
+    dados.TryGetValue("codigo", out var codigo); // Pode ser null, se não enviado
+
     Console.WriteLine("JSON recebido da Alexa:");
     Console.WriteLine(body); // <-- isso aparecerá nos logs do Render
 
@@ -253,14 +258,10 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
         PropertyNameCaseInsensitive = true
     });
 
-    string campo = requestData?.Request?.Intent?.Slots?["informacao"]?.Value ?? "";
+    string campo = informacao;
     string codProduto = "";
 
-    try
-    {
-        codProduto = requestData?.Request?.Intent?.Slots?["codigo"]?.Value ?? "";
-    }
-    catch
+    if (codigo == null)
     {
         codProduto = Regex.Match(campo, @"\d+").Value;
     }
