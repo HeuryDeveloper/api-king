@@ -254,9 +254,13 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     });
 
     string campo = requestData?.Request?.Intent?.Slots?["informacao"]?.Value ?? "";
-    string codProduto = requestData?.Request?.Intent?.Slots?["codigo"]?.Value ?? "";
+    string codProduto = "";
 
-    if ((codProduto == null) || (codProduto == ""))
+    try
+    {
+        codProduto = requestData?.Request?.Intent?.Slots?["codigo"]?.Value ?? "";
+    }
+    catch
     {
         codProduto = Regex.Match(campo, @"\d+").Value;
     }
