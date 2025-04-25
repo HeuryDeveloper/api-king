@@ -84,25 +84,7 @@ app.MapPost("/inserir-compra", async (Compra compra) =>
 // =======================
 // INSERIR ITENS DA COMPRA
 // =======================
-app.MapPost("/inserir-itenscompra", async (ItensCompra itens, Compra compra) =>
-{
-    using var conn = new MySqlConnection(connectionString);
-    await conn.OpenAsync();
 
-    string query = @"INSERT INTO itens_compra 
-                    (compra, fornecedor, valor_total, num_pedido, idPagamento)
-                    VALUES (@dataCompra, @fornecedor, @valorTotal, @pedido, @idPagamento)";
-
-    using var cmd = new MySqlCommand(query, conn);
-    cmd.Parameters.AddWithValue("@dataCompra", compra.DataCompra);
-    cmd.Parameters.AddWithValue("@fornecedor", compra.Fornecedor);
-    cmd.Parameters.AddWithValue("@valorTotal", compra.ValorTotal);
-    cmd.Parameters.AddWithValue("@pedido", compra.Pedido);
-    cmd.Parameters.AddWithValue("@idPagamento", compra.IDPagamento);
-
-    await cmd.ExecuteNonQueryAsync();
-    return Results.Ok(new { mensagem = "Nova compra inserida com sucesso." });
-});
 
 app.MapPost("/criar-tabela", async (Produto produto) =>
 {
