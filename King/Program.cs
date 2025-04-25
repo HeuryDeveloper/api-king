@@ -58,6 +58,65 @@ app.MapPost("/inserir-produto", async (Produto produto) =>
     return Results.Ok(new { mensagem = "Produto inserido com sucesso." });
 });
 
+// ==============
+// INSERIR COMPRA
+// ==============
+app.MapPost("/inserir-compra", async (Compra compra) =>
+{
+    using var conn = new MySqlConnection(connectionString);
+    await conn.OpenAsync();
+
+    string query = @"INSERT INTO compras 
+                    (data_compra, fornecedor, valor_total, num_pedido, idPagamento)
+                    VALUES (@dataCompra, @fornecedor, @valorTotal, @pedido, @idPagamento)";
+
+    using var cmd = new MySqlCommand(query, conn);
+    cmd.Parameters.AddWithValue("@dataCompra", compra.DataCompra);
+    cmd.Parameters.AddWithValue("@fornecedor", compra.Fornecedor);
+    cmd.Parameters.AddWithValue("@valorTotal", compra.ValorTotal);
+    cmd.Parameters.AddWithValue("@pedido", compra.Pedido);
+    cmd.Parameters.AddWithValue("@idPagamento", compra.IDPagamento);
+
+    await cmd.ExecuteNonQueryAsync();
+    return Results.Ok(new { mensagem = "Nova compra inserida com sucesso." });
+});
+
+// =======================
+// INSERIR ITENS DA COMPRA
+// =======================
+app.MapPost("/inserir-itenscompra", async (ItensCompra itens, Compra compra) =>
+{
+    using var conn = new MySqlConnection(connectionString);
+    await conn.OpenAsync();
+
+    string query = @"INSERT INTO itens_compra 
+                    (compra, fornecedor, valor_total, num_pedido, idPagamento)
+                    VALUES (@dataCompra, @fornecedor, @valorTotal, @pedido, @idPagamento)";
+
+    using var cmd = new MySqlCommand(query, conn);
+    cmd.Parameters.AddWithValue("@dataCompra", compra.DataCompra);
+    cmd.Parameters.AddWithValue("@fornecedor", compra.Fornecedor);
+    cmd.Parameters.AddWithValue("@valorTotal", compra.ValorTotal);
+    cmd.Parameters.AddWithValue("@pedido", compra.Pedido);
+    cmd.Parameters.AddWithValue("@idPagamento", compra.IDPagamento);
+
+    await cmd.ExecuteNonQueryAsync();
+    return Results.Ok(new { mensagem = "Nova compra inserida com sucesso." });
+});
+
+app.MapPost("/criar-tabela", async (Produto produto) =>
+{
+    string connectionString1 = "Server=hopper.proxy.rlwy.net;Port=10728;Database=railway;Uid=root;Pwd=ZsJZKjXPpZmTBiNtXTcHEJFNDHnvOHNk;";
+    using var conn = new MySqlConnection(connectionString1);
+    await conn.OpenAsync();
+
+    string criar = "CREATE TABLE `itens_compra` (`id` int(11) NOT NULL AUTO_INCREMENT, `compra_id` int(11) DEFAULT NULL, `produto_id` int(11) DEFAULT NULL, `quantidade` int(11) DEFAULT NULL, `preco_unitario` decimal(10,2) DEFAULT NULL, PRIMARY KEY (`id`), KEY `compra_id` (`compra_id`), KEY `produto_id` (`produto_id`), CONSTRAINT `itens_compra_ibfk_1` FOREIGN KEY (`compra_id`) REFERENCES `compras` (`id`), CONSTRAINT `itens_compra_ibfk_2` FOREIGN KEY (`produto_id`) REFERENCES `produtos` (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+    using var cmd1 = new MySqlCommand(criar, conn);
+    await cmd1.ExecuteNonQueryAsync();
+
+    return Results.Ok(new { mensagem = "Tabela criada com sucesso." });
+});
+
 // ============================
 // CONSULTAR PRODUTO
 // ============================
@@ -165,30 +224,9 @@ app.MapPost("/inserir-venda", async (Venda venda) =>
     }
 });
 
-// ============================
-// CONSULTAR ESTOQUE DE UM PRODUTO
-// ============================
-app.MapGet("/estoque/{nome}", async (string nome) =>
-{
-    using var conn = new MySqlConnection(connectionString);
-    await conn.OpenAsync();
-
-    string query = "SELECT quantidade_estoque FROM produtos WHERE nome = @nome";
-
-    using var cmd = new MySqlCommand(query, conn);
-    cmd.Parameters.AddWithValue("@nome", nome);
-
-    object? result = await cmd.ExecuteScalarAsync();
-
-    if (result != null)
-    {
-        return Results.Ok(new { nome = nome, estoque = Convert.ToInt32(result) });
-    }
-
-    return Results.NotFound(new { mensagem = "Produto não encontrado." });
-});
-
-// Endpoint da Alexa para consultar estoque
+// ===================================================
+// CONSULTAR ESTOQUE DE UM PRODUTO POR NOME PELA ALEXA
+// ===================================================
 app.MapPost("/alexa/verificar-estoque", async (HttpContext context) =>
 {
     using var reader = new StreamReader(context.Request.Body);
@@ -239,7 +277,9 @@ app.MapPost("/alexa/verificar-estoque", async (HttpContext context) =>
     });
 });
 
-// Endpoint da Alexa para buscar dados do produto
+// =====================================================
+// CONSULTAR PRODUTO POR CODIGO DO FORNECEDOR PELA ALEXA
+// =====================================================
 app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
 {
     using var reader = new StreamReader(context.Request.Body);
@@ -257,10 +297,12 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
 
     string campo = informacao;
     string codProduto = Regex.Match(campo, @"\d+").Value;
+    bool naoFalarNomeProduto = false;
 
     if (string.IsNullOrWhiteSpace(codProduto))
     {
         codProduto = codigo;
+        naoFalarNomeProduto = true;
     }
 
     if (string.IsNullOrWhiteSpace(codProduto))
@@ -284,21 +326,48 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
 
     if (campo.Contains("estoque") || campo.Contains("quantidade"))
     {
-        respostaAlexa = produto != null
-            ? $"Voce tem {produto.QuantidadeEstoque} unidades do produto {produto.Descricao}."
-            : $"Nao encontrei o produto {codProduto} no estoque.";
+        if (naoFalarNomeProduto == false)
+        {
+            respostaAlexa = produto != null
+                ? $"Voce tem {produto.QuantidadeEstoque} unidades do produto {produto.Descricao}."
+                : $"Nao encontrei o produto {codProduto} no estoque.";
+        }
+        else
+        {
+            respostaAlexa = produto != null
+                ? $"Voce tem {produto.QuantidadeEstoque} unidades desse produto."
+                : $"Nao encontrei o produto {codProduto} no estoque.";
+        }
     }
-    else if (campo.Contains("compra") || campo.Contains("comprei"))
+    else if (campo.Contains("compra") || campo.Contains("comprei") || campo.Contains("paguei") || campo.Contains("pago") || campo.Contains("custou"))
     {
-        respostaAlexa = produto != null
-            ? $"Voce comprou o produto {produto.Descricao} por {produto.PrecoCompra}."
-            : $"Nao encontrei o produto {codProduto} no cadastro.";
+        if (naoFalarNomeProduto == false)
+        {
+            respostaAlexa = produto != null
+                ? $"Voce comprou o produto {produto.Descricao} por {produto.PrecoCompra}."
+                : $"Nao encontrei o produto {codProduto} no cadastro.";
+        }
+        else
+        {
+            respostaAlexa = produto != null
+                ? $"Voce comprou este produto por {produto.PrecoCompra}."
+                : $"Nao encontrei o produto {codProduto} no cadastro.";
+        }
     }
-    else if (campo.Contains("venda") || campo.Contains("vendo"))
+    else if (campo.Contains("venda") || campo.Contains("vendo") || campo.Contains("vendendo") || campo.Contains("custa"))
     {
-        respostaAlexa = produto != null
-            ? $"O valor de venda do produto {produto.Descricao} e de {produto.PrecoVenda}."
-            : $"Nao encontrei o produto {codProduto} no cadastro.";
+        if (naoFalarNomeProduto == false)
+        {
+            respostaAlexa = produto != null
+                ? $"O valor de venda do produto {produto.Descricao} e de {produto.PrecoVenda}."
+                : $"Nao encontrei o produto {codProduto} no cadastro.";
+        }
+        else
+        {
+            respostaAlexa = produto != null
+                ? $"O valor de venda deste produto e de {produto.PrecoVenda}."
+                : $"Nao encontrei o produto {codProduto} no cadastro.";
+        }
     }
     else if (campo.Contains("descri") || campo.Contains("nome"))
     {
@@ -308,9 +377,18 @@ app.MapPost("/alexa/buscar-produto", async (HttpContext context) =>
     }
     else if (campo.Contains("lucro") || campo.Contains("ganhando"))
     {
-        respostaAlexa = produto != null
-            ? $"O lucro do produto {produto.Descricao} e de {produto.PrecoVenda - produto.PrecoCompra}, representa {Convert.ToDouble((produto.PrecoVenda - produto.PrecoCompra) / produto.PrecoCompra * 100).ToString("0.00")} porcento."
-            : $"Nao encontrei o produto {codProduto} no cadastro.";
+        if (naoFalarNomeProduto == false)
+        {
+            respostaAlexa = produto != null
+                ? $"O lucro do produto {produto.Descricao} e de {produto.PrecoVenda - produto.PrecoCompra} que representa {Convert.ToDouble((produto.PrecoVenda - produto.PrecoCompra) / produto.PrecoCompra * 100).ToString("0.00")} porcento."
+                : $"Nao encontrei o produto {codProduto} no cadastro.";
+        }
+        else
+        {
+            respostaAlexa = produto != null
+                ? $"O lucro deste produto e de {produto.PrecoVenda - produto.PrecoCompra} que representa {Convert.ToDouble((produto.PrecoVenda - produto.PrecoCompra) / produto.PrecoCompra * 100).ToString("0.00")} porcento."
+                : $"Nao encontrei o produto {codProduto} no cadastro.";
+        }
     }
 
     return Results.Json(new
@@ -405,6 +483,26 @@ public class Cliente
     public string Email { get; set; }
     public string Telefone { get; set; }
     public string Endereco { get; set; }
+}
+
+public class Compra
+{
+    public int ID { get; set; }
+    public DateTime DataCompra { get; set; }
+    public string Fornecedor { get; set; }
+    public decimal ValorTotal { get; set; }
+    public string Pedido { get; set; }
+    public int IDPagamento { get; set; }
+    public List<ItensCompra> Itens { get; set; }
+}
+
+public class ItensCompra
+{
+    public int ID { get; set; }
+    public int IDCompra { get; set; }
+    public int IDProduto { get; set; }
+    public int Quantidade { get; set; }
+    public decimal PrecoUnitario { get; set; }
 }
 
 public class Venda
